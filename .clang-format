@@ -1,0 +1,15 @@
+BasedOnStyle: GNU
+
+TabWidth: 4
+IndentWidth: 4
+UseTab: Always
+AlignEscapedNewlines: Left
+AlignConsecutiveMacros: AcrossEmptyLines
+
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000
+
+ColumnLimit: 100
+BreakBeforeBraces: Mozilla
+SpaceBeforeParens: Never

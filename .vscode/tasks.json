@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "meson",
+            "mode": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "label": "Meson: Build all targets"
+        },
+        {
+            "type": "meson",
+            "mode": "clean",
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "label": "Clean"
+        }
+    ]
+}

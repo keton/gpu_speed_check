@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+				"WIN32=1",
+				"WIN64=1",
+				"PCI_CONFIG_H=1",
+				"PCI_COMPRESSED_IDS=1",
+				"PCI_HAVE_64BIT_ADDRESS=1",
+				"PCI_ARCH_I386",
+				"PCI_OS_WINDOWS",
+				"PCI_HAVE_PM_INTEL_CONF",
+				"PCI_IDS=\"pci.ids.gz\"",
+				"PCI_PATH_IDS_DIR=\"\"",
+				"PCILIB_VERSION=\"3.10.0\""
+            ],
+            "windowsSdkVersion": "10.0.22000.0",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compileCommands": "${workspaceFolder}/builddir/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

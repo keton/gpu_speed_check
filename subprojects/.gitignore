@@ -1,0 +1,7 @@
+/*
+!*.wrap
+!.gitignore
+!packagefiles/
+
+# meson-redirect wraps
+zlib.wrap
