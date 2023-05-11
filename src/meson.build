@@ -1,6 +1,7 @@
 src_files = [
     'main.c',
 	'rc_manager.c',
+	'pcie_speed.c',
     program_rc,
 ]
 

@@ -1,5 +1,6 @@
 #include "windows.h"
 #include <shlwapi.h>
+#include <stdbool.h>
 #pragma comment(lib, "shlwapi.lib")
 
 #include "rc_manager.h"
@@ -11,8 +12,8 @@ static int unpack_rc(WORD wId, LPSTR lpFname)
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 
 	// unpack file in current executable directory
-	char executable_path[MAX_PATH] = { 0 };
-	char tgt_full_path[MAX_PATH] = { 0 };
+	char executable_path[MAX_PATH] = {0};
+	char tgt_full_path[MAX_PATH] = {0};
 	if(!GetModuleFileName(NULL, executable_path, MAX_PATH)) {
 		return 1;
 	}
@@ -77,6 +78,8 @@ cleanup:
 
 int rc_manager_init(void)
 {
+	static bool rc_manager_is_init = false;
+
 	if(unpack_rc(RC_DIRECTIO_DLL, TEXT(RC_DIRECTIO_DLL_NAME))) {
 		return 1;
 	}
@@ -84,6 +87,8 @@ int rc_manager_init(void)
 	if(unpack_rc(RC_PCIIDS, TEXT(RC_PCIIDS_NAME))) {
 		return 1;
 	}
+
+	rc_manager_is_init = true;
 
 	return 0;
 }
