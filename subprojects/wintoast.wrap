@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/mohabouje/WinToast.git
+revision = v1.3.0
+depth = 1
+
+[provide]
+dependency_names = wintoast-1.3.0

@@ -5,19 +5,20 @@
 
 #include "console.h"
 #include "pcie_speed.h"
+#include "toast.h"
 
-#define PCI_CLASS_VGA  "0300"
-#define PCI_FILTER_STR "::" PCI_CLASS_VGA
+#define PCI_CLASS_VGA			   "0300"
+#define PCI_FILTER_STR			   "::" PCI_CLASS_VGA
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+#define TOAST_SLEEP_MS			   (60 * 1000)
+
+#define COMMAND_QUIET			   L"--quiet"
+#define COMMAND_QUIET_SHORT		   L"-q"
+#define COMMAND_ALWAYS_TOAST	   L"--always"
+#define COMMAND_ALWAYS_TOAST_SHORT L"-a"
+
+static int check_gpu_speed(bool *const toast_shown, const bool always_show_toast)
 {
-	UNREFERENCED_PARAMETER(hInstance);
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-	UNREFERENCED_PARAMETER(nCmdShow);
-
-	console_init();
-
 	struct pcie_speed_data pci = {0};
 
 	if(pcie_speed_get(PCI_FILTER_STR, &pci) != EXIT_SUCCESS) {
@@ -39,7 +40,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 		printf("\tLnkCtl2: Target Link Speed: %s\n", pcie_speed_to_str(entry->lnk_ctl2_speed));
 
 		// device is operating at suboptimal speed
-		if(entry->lnk_cap_speed < entry->lnk_cap2_speed) {
+		if((entry->lnk_cap_speed < entry->lnk_cap2_speed) || always_show_toast) {
+			char buff[1024] = {0};
+			snprintf(buff, sizeof(buff), "PCIe speed %s instead of %s",
+					 pcie_speed_to_str(entry->lnk_cap_speed),
+					 pcie_speed_to_str(entry->lnk_cap2_speed));
+
+			toast_show("GPU Speed error", entry->name, buff, TOAST_SLEEP_MS);
+
+			*toast_shown = true;
+
 			printf("Warning: device is operating at suboptimal speed %s instead of %s\n",
 				   pcie_speed_to_str(entry->lnk_cap_speed),
 				   pcie_speed_to_str(entry->lnk_cap2_speed));
@@ -48,12 +58,60 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 
 	pcie_speed_data_free(&pci);
 
-	if(console_is_allocated()) {
+	return EXIT_SUCCESS;
+}
+
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+{
+	UNREFERENCED_PARAMETER(hInstance);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(nCmdShow);
+
+	int ret = EXIT_SUCCESS;
+	bool toast_shown = false;
+	bool always_show_toast = false;
+	bool hide_console = false;
+
+	int argc = 0;
+	LPWSTR *argv = CommandLineToArgvW(pCmdLine, &argc);
+
+	for(int i = 0; i < argc; i++) {
+		if(!wcscmp(COMMAND_QUIET, argv[i]) || !wcscmp(COMMAND_QUIET_SHORT, argv[i])) {
+			hide_console = true;
+		} else if(!wcscmp(COMMAND_ALWAYS_TOAST, argv[i]) ||
+				  !wcscmp(COMMAND_ALWAYS_TOAST_SHORT, argv[i])) {
+			always_show_toast = true;
+		}
+	}
+
+	console_init();
+
+	if(hide_console && console_is_allocated()) {
+		ShowWindow(GetConsoleWindow(), SW_HIDE);
+	}
+
+	if(toast_init() != TOAST_RESULT_SUCCESS) {
+		fprintf(stderr, "Failed to initialize toast\n");
+		ret = EXIT_FAILURE;
+		goto exit;
+	}
+
+	if(check_gpu_speed(&toast_shown, always_show_toast) != EXIT_SUCCESS) {
+		ret = EXIT_FAILURE;
+		goto exit;
+	}
+
+	if(!toast_shown && !hide_console && console_is_allocated()) {
 		printf("Press any key...\n");
 		console_wait_anykey();
 	}
 
-	console_free();
+	if(toast_shown) {
+		Sleep(TOAST_SLEEP_MS);
+	}
 
-	return EXIT_SUCCESS;
+exit:
+
+	console_free();
+	return ret;
 }
