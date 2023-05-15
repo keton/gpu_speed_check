@@ -2,6 +2,7 @@ src_files = [
     'main.c',
 	'rc_manager.c',
 	'pcie_speed.c',
+	'console.c',
     program_rc,
 ]
 
@@ -19,4 +20,4 @@ link_args = [
 	'/MANIFESTUAC:level=\'requireAdministrator\'',
 ]
 
-executable(meson.project_name(), src_files, include_directories: inc_dirs, dependencies: deps, win_subsystem:'console', link_args: link_args)
+executable(meson.project_name(), src_files, include_directories: inc_dirs, dependencies: deps, win_subsystem:'windows', link_args: link_args)

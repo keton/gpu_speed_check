@@ -1,14 +1,23 @@
-
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <windows.h>
 
+#include "console.h"
 #include "pcie_speed.h"
 
 #define PCI_CLASS_VGA  "0300"
 #define PCI_FILTER_STR "::" PCI_CLASS_VGA
 
-int main(void)
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
+	UNREFERENCED_PARAMETER(hInstance);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(nCmdShow);
+
+	console_init();
+
 	struct pcie_speed_data pci = {0};
 
 	if(pcie_speed_get(PCI_FILTER_STR, &pci) != EXIT_SUCCESS) {
@@ -38,6 +47,13 @@ int main(void)
 	}
 
 	pcie_speed_data_free(&pci);
+
+	if(console_is_allocated()) {
+		printf("Press any key...\n");
+		console_wait_anykey();
+	}
+
+	console_free();
 
 	return EXIT_SUCCESS;
 }
