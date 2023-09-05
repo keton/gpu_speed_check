@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,10 +41,11 @@ static int check_gpu_speed(bool *const toast_shown, const bool always_show_toast
 		printf("\tLnkCtl2: Target Link Speed: %s\n", pcie_speed_to_str(entry->lnk_ctl2_speed));
 
 		// device is operating at suboptimal speed
-		if((entry->lnk_cap_speed < entry->lnk_cap2_speed) || always_show_toast) {
+		if((entry->lnk_cap_speed < entry->lnk_cap2_speed) ||
+		   (entry->lnk_sta_speed < entry->lnk_cap2_speed) || always_show_toast) {
 			char buff[1024] = {0};
 			snprintf(buff, sizeof(buff), "PCIe speed %s instead of %s",
-					 pcie_speed_to_str(entry->lnk_cap_speed),
+					 pcie_speed_to_str(min(entry->lnk_cap_speed, entry->lnk_sta_speed)),
 					 pcie_speed_to_str(entry->lnk_cap2_speed));
 
 			toast_show("GPU Speed error", entry->name, buff, TOAST_SLEEP_MS);
@@ -51,7 +53,7 @@ static int check_gpu_speed(bool *const toast_shown, const bool always_show_toast
 			*toast_shown = true;
 
 			printf("Warning: device is operating at suboptimal speed %s instead of %s\n",
-				   pcie_speed_to_str(entry->lnk_cap_speed),
+				   pcie_speed_to_str(min(entry->lnk_cap_speed, entry->lnk_sta_speed)),
 				   pcie_speed_to_str(entry->lnk_cap2_speed));
 		}
 	}
