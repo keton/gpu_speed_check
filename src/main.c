@@ -1,49 +1,119 @@
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
 
-#include "pci.h"
-#include "rc_manager.h"
+#include "console.h"
+#include "pcie_speed.h"
+#include "toast.h"
 
-/*
- *	The PCI Library -- Example of use (simplistic lister of PCI devices)
- *
- *	Written by Martin Mares and put to public domain. You can do
- *	with it anything you want, but I don't give you any warranty.
- */
-static int pcilib_main(void)
+#define PCI_CLASS_VGA			   "0300"
+#define PCI_FILTER_STR			   "::" PCI_CLASS_VGA
+
+#define TOAST_SLEEP_MS			   (60 * 1000)
+
+#define COMMAND_QUIET			   L"--quiet"
+#define COMMAND_QUIET_SHORT		   L"-q"
+#define COMMAND_ALWAYS_TOAST	   L"--always"
+#define COMMAND_ALWAYS_TOAST_SHORT L"-a"
+
+static int check_gpu_speed(bool *const toast_shown, const bool always_show_toast)
 {
-	struct pci_access *pacc;
-	struct pci_dev *dev;
-	unsigned int c;
-	char namebuf[1024], *name;
+	struct pcie_speed_data pci = {0};
 
-	pacc = pci_alloc(); /* Get the pci_access structure */
-	/* Set all options you want -- here we stick with the defaults */
-	pci_init(pacc);								   /* Initialize the PCI library */
-	pci_scan_bus(pacc);							   /* We want to get the list of devices */
-	for(dev = pacc->devices; dev; dev = dev->next) /* Iterate over all devices */
-	{
-		pci_fill_info(dev, PCI_FILL_IDENT | PCI_FILL_BASES
-							   | PCI_FILL_CLASS);  /* Fill in header info we need */
-		c = pci_read_byte(dev, PCI_INTERRUPT_PIN); /* Read config register directly */
-		printf("%04x:%02x:%02x.%d vendor=%04x device=%04x class=%04x irq=%d (pin %d) base0=%lx",
-			   dev->domain, dev->bus, dev->dev, dev->func, dev->vendor_id, dev->device_id,
-			   dev->device_class, dev->irq, c, (long)dev->base_addr[0]);
-
-		/* Look up and print the full name of the device */
-		name = pci_lookup_name(pacc, namebuf, sizeof(namebuf), PCI_LOOKUP_DEVICE, dev->vendor_id,
-							   dev->device_id);
-		printf(" (%s)\n", name);
+	if(pcie_speed_get(PCI_FILTER_STR, &pci) != EXIT_SUCCESS) {
+		fprintf(stderr, "Failed to get PCIe device data\n");
+		return EXIT_FAILURE;
 	}
-	pci_cleanup(pacc); /* Close everything */
-	return 0;
+
+	for(size_t i = 0; i < pci.len; i++) {
+
+		struct pcie_speed_entry *entry = &pci.data[i];
+
+		printf("%s\n", entry->name);
+		printf("\tLnkCap:\tMaximum Link Speed %s, Maximum Link Width x%d\n",
+			   pcie_speed_to_str(entry->lnk_cap_speed), entry->lnk_cap_width);
+		printf("\tLnkSta:\tNegotiated Link Speed %s, Negotiated Link Width x%d\n",
+			   pcie_speed_to_str(entry->lnk_sta_speed), entry->lnk_sta_width);
+		printf("\tLnkCap2: Supported Link Speed: 2.5GT/s - %s\n",
+			   pcie_speed_to_str(entry->lnk_cap2_speed));
+		printf("\tLnkCtl2: Target Link Speed: %s\n", pcie_speed_to_str(entry->lnk_ctl2_speed));
+
+		// device is operating at suboptimal speed
+		if((entry->lnk_cap_speed < entry->lnk_cap2_speed) ||
+		   (entry->lnk_sta_speed < entry->lnk_cap2_speed) || always_show_toast) {
+			char buff[1024] = {0};
+			snprintf(buff, sizeof(buff), "PCIe speed %s instead of %s",
+					 pcie_speed_to_str(min(entry->lnk_cap_speed, entry->lnk_sta_speed)),
+					 pcie_speed_to_str(entry->lnk_cap2_speed));
+
+			toast_show("GPU Speed error", entry->name, buff, TOAST_SLEEP_MS);
+
+			*toast_shown = true;
+
+			printf("Warning: device is operating at suboptimal speed %s instead of %s\n",
+				   pcie_speed_to_str(min(entry->lnk_cap_speed, entry->lnk_sta_speed)),
+				   pcie_speed_to_str(entry->lnk_cap2_speed));
+		}
+	}
+
+	pcie_speed_data_free(&pci);
+
+	return EXIT_SUCCESS;
 }
 
-int main(void)
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	// unpack all required resources
-	if(rc_manager_init() == 0) {
-		// do something useful with pcilib
-		return pcilib_main();
+	UNREFERENCED_PARAMETER(hInstance);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(nCmdShow);
+
+	int ret = EXIT_SUCCESS;
+	bool toast_shown = false;
+	bool always_show_toast = false;
+	bool hide_console = false;
+
+	int argc = 0;
+	LPWSTR *argv = CommandLineToArgvW(pCmdLine, &argc);
+
+	for(int i = 0; i < argc; i++) {
+		if(!wcscmp(COMMAND_QUIET, argv[i]) || !wcscmp(COMMAND_QUIET_SHORT, argv[i])) {
+			hide_console = true;
+		} else if(!wcscmp(COMMAND_ALWAYS_TOAST, argv[i]) ||
+				  !wcscmp(COMMAND_ALWAYS_TOAST_SHORT, argv[i])) {
+			always_show_toast = true;
+		}
 	}
-	return 1;
+
+	console_init();
+
+	if(hide_console && console_is_allocated()) {
+		ShowWindow(GetConsoleWindow(), SW_HIDE);
+	}
+
+	if(toast_init() != TOAST_RESULT_SUCCESS) {
+		fprintf(stderr, "Failed to initialize toast\n");
+		ret = EXIT_FAILURE;
+		goto exit;
+	}
+
+	if(check_gpu_speed(&toast_shown, always_show_toast) != EXIT_SUCCESS) {
+		ret = EXIT_FAILURE;
+		goto exit;
+	}
+
+	if(!toast_shown && !hide_console && console_is_allocated()) {
+		printf("Press any key...\n");
+		console_wait_anykey();
+	}
+
+	if(toast_shown) {
+		Sleep(TOAST_SLEEP_MS);
+	}
+
+exit:
+
+	console_free();
+	return ret;
 }

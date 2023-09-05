@@ -1,6 +1,6 @@
 @set @foo=1 /*
 @echo off
-cscript %0 //E:JScript //Nologo
+cscript %0 //E:JScript //Nologo %1
 goto end
 */;
 
@@ -9,6 +9,10 @@ var adSaveCreateOverWrite = 2;
 
 var SRC = "http://pci-ids.ucw.cz/v2.2/pci.ids.gz";
 var DEST = "pci.ids.gz";
+
+if(WScript.Arguments.length == 1) {
+	DEST = WScript.Arguments(0)
+}
 
 var XMLHTTP = new ActiveXObject("MSXML2.XMLHTTP");
 XMLHTTP.open("GET", SRC, false);

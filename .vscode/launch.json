@@ -8,7 +8,7 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "builddir/src/pciutils_template.exe",
+            "program": "builddir/src/gpu_speed.exe",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceRoot}",
