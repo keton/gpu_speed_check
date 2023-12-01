@@ -7,6 +7,9 @@ compile_args = meson.get_compiler('c').get_supported_arguments(
   '/wd4267', # 'conversion' conversion from 'type1' to 'type2', possible loss of data
   '/wd4305', # 'conversion' conversion from 'type1' to 'type2', possible loss of data
   '/wd4098', # 'void' function returning a value
+  '/wd4996', # 'GetVersionExA': was declared deprecated
+  '/wd4311',
+  '/wd4312',
 )
 
 compile_args += [
@@ -18,7 +21,8 @@ compile_args += [
 	'-D_CRT_SECURE_NO_WARNINGS',
 	'-DPCI_ARCH_I386',
 	'-DPCI_OS_WINDOWS',
-	'-DPCI_HAVE_PM_INTEL_CONF',
+	'-DPCI_HAVE_PM_WIN32_KLDBG',
+	'-DPCI_HAVE_PM_WIN32_CFGMGR32',
 	'-DPCI_IDS="pci.ids.gz"',
 	'-DPCI_PATH_IDS_DIR=""',
 	'-DPCILIB_VERSION="@0@"'.format(meson.project_version()),
@@ -39,13 +43,14 @@ src_files = [
 	'lib/names-hwdb.c',
 	'lib/params.c',
 	'lib/caps.c',
-	'lib/i386-ports.c',
+	'lib/win32-kldbg.c',
+	'lib/win32-cfgmgr32.c',
+	'lib/emulated.c',
 ]
 
-zlib_dep = dependency('zlib', fallback : ['zlib', 'zlib_dep'], default_options: ['default_library=static'])
-
 deps = [
-	zlib_dep,
+	dependency('zlib', fallback : ['zlib', 'zlib_dep'], default_options: ['default_library=static']),
+	meson.get_compiler('c').find_library('cfgmgr32', required: true),
 ]
 
 # do not expose all headers to base project
@@ -83,7 +88,7 @@ setpci_src = [
 	'compat/getopt.c',
 ]
 
-if not meson.is_subproject()
+# if not meson.is_subproject()
 	executable('lspci', lspci_src, include_directories: inc_dirs, dependencies: deps, link_with: pciutils_lib, c_args : compile_args)
 	executable('setpci', setpci_src, include_directories: inc_dirs, dependencies: deps, link_with: pciutils_lib, c_args : compile_args)
-endif
+# endif

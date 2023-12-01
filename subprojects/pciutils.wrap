@@ -2,7 +2,7 @@
 url = https://github.com/pciutils/pciutils.git
 revision = v3.10.0
 depth = 1
-diff_files = pciutils/pciutils-windows-directio.patch
+# diff_files = pciutils/pciutils-windows-directio.patch
 patch_directory = pciutils/meson
 
 [provide]

@@ -80,10 +80,6 @@ int rc_manager_init(void)
 {
 	static bool rc_manager_is_init = false;
 
-	if(unpack_rc(RC_DIRECTIO_DLL, TEXT(RC_DIRECTIO_DLL_NAME))) {
-		return 1;
-	}
-
 	if(unpack_rc(RC_PCIIDS, TEXT(RC_PCIIDS_NAME))) {
 		return 1;
 	}

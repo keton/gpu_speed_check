@@ -44,6 +44,6 @@ struct pcie_speed_data
 	size_t len;
 };
 
-int pcie_speed_get(char *pci_filter_str, struct pcie_speed_data *pcie_speed_data);
+int pcie_speed_get(char * pci_method_str, char *pci_filter_str, struct pcie_speed_data *pcie_speed_data);
 int pcie_speed_data_free(struct pcie_speed_data *pcie_speed_data);
 char *pcie_speed_to_str(pcie_speed_t speed);

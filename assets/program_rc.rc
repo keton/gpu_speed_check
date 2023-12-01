@@ -1,5 +1,4 @@
 #include "rcdata.h"
 
 IDI_ICON_1 ICON "program_icon.ico"
-RC_DIRECTIO_DLL	RCDATA "DirectIOLibx64.dll"
 RC_PCIIDS RCDATA "pci.ids.gz"

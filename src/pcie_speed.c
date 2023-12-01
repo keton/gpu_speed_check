@@ -104,7 +104,7 @@ char *pcie_speed_to_str(pcie_speed_t speed)
 	}
 }
 
-int pcie_speed_get(char *pci_filter_str, struct pcie_speed_data *pcie_speed_data)
+int pcie_speed_get(char * pci_method_str, char *pci_filter_str, struct pcie_speed_data *pcie_speed_data)
 {
 
 	if(!pci_filter_str || !pcie_speed_data) {
@@ -124,6 +124,13 @@ int pcie_speed_get(char *pci_filter_str, struct pcie_speed_data *pcie_speed_data
 		fprintf(stderr, "pci_alloc\n");
 		return EXIT_FAILURE;
 	}
+
+	int pci_method_id = pci_lookup_method(pci_method_str);
+	if(pci_method_id < 0) {
+		fprintf(stderr, "No such PCI access method: %s\n", pci_method_str);
+		return EXIT_FAILURE;
+	}
+	pacc->method = pci_method_id;
 
 	pci_init(pacc);
 	pci_filter_init(pacc, &filter);
@@ -182,11 +189,12 @@ int pcie_speed_get(char *pci_filter_str, struct pcie_speed_data *pcie_speed_data
 		uint16_t lnk_ctl2_raw = get_conf_word(cap_express_data, PCI_EXP_LNKCTL2);
 		entry->lnk_ctl2_speed = lnk_ctl2_speed_to_enum(PCI_EXP_LNKCTL2_SPEED(lnk_ctl2_raw));
 
+		pcie_speed_data->len++;
+
 		if(pcie_speed_data->len >= PCIE_SPEED_MAX_DEV) {
 			printf("Warning: pcie_speed_data out of space\n");
 			break;
 		}
-		pcie_speed_data->len++;
 	}
 
 	pci_cleanup(pacc);

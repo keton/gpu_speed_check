@@ -10,6 +10,7 @@
 
 #define PCI_CLASS_VGA			   "0300"
 #define PCI_FILTER_STR			   "::" PCI_CLASS_VGA
+#define PCI_METHOD_STR			   "win32-kldbg"
 
 #define TOAST_SLEEP_MS			   (60 * 1000)
 
@@ -22,7 +23,7 @@ static int check_gpu_speed(bool *const toast_shown, const bool always_show_toast
 {
 	struct pcie_speed_data pci = {0};
 
-	if(pcie_speed_get(PCI_FILTER_STR, &pci) != EXIT_SUCCESS) {
+	if(pcie_speed_get(PCI_METHOD_STR, PCI_FILTER_STR, &pci) != EXIT_SUCCESS) {
 		fprintf(stderr, "Failed to get PCIe device data\n");
 		return EXIT_FAILURE;
 	}
